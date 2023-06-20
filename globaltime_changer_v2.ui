@@ -11,7 +11,11 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>GlobalTime Text Changer</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>icon.jpg</normaloff>icon.jpg</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2">
@@ -28,7 +32,7 @@
        <widget class="QLineEdit" name="script_name"/>
       </item>
       <item row="1" column="1">
-       <widget class="QPushButton" name="load_script">
+       <widget class="QPushButton" name="load_script_button">
         <property name="text">
          <string>Load Script</string>
         </property>
@@ -42,7 +46,7 @@
        </widget>
       </item>
       <item row="8" column="3" colspan="3">
-       <widget class="QPushButton" name="delete_script">
+       <widget class="QPushButton" name="delete_script_button">
         <property name="text">
          <string>Delete Script</string>
         </property>
@@ -65,14 +69,14 @@
        <widget class="QLineEdit" name="IP_to_add"/>
       </item>
       <item row="6" column="4">
-       <widget class="QPushButton" name="add_IP">
+       <widget class="QPushButton" name="add_IP_button">
         <property name="text">
          <string>Add IP</string>
         </property>
        </widget>
       </item>
       <item row="8" column="0" colspan="3">
-       <widget class="QPushButton" name="run_script">
+       <widget class="QPushButton" name="run_script_button">
         <property name="text">
          <string>Run Script</string>
         </property>
@@ -105,7 +109,7 @@
        </spacer>
       </item>
       <item row="1" column="0">
-       <widget class="QPushButton" name="save_script">
+       <widget class="QPushButton" name="save_script_button">
         <property name="text">
          <string>Save Script</string>
         </property>
@@ -152,7 +156,7 @@
        </widget>
       </item>
       <item row="6" column="5">
-       <widget class="QPushButton" name="delete_IPs">
+       <widget class="QPushButton" name="delete_IPs_button">
         <property name="text">
          <string>Delete IP(s)</string>
         </property>
@@ -185,19 +189,71 @@
     </item>
    </layout>
   </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>645</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionSelect_Script_Folder"/>
+    <addaction name="separator"/>
+    <addaction name="actionLog_Runs"/>
+    <addaction name="actionAutosave"/>
+   </widget>
+   <addaction name="menuSettings"/>
+  </widget>
+  <action name="actionSelect_Script_Folder">
+   <property name="text">
+    <string>Select Script Folder</string>
+   </property>
+  </action>
+  <action name="actionCreate_Log_File">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Create Log File</string>
+   </property>
+  </action>
+  <action name="actionLog_Runs">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Log Runs</string>
+   </property>
+  </action>
+  <action name="actionAutosave">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Autosave</string>
+   </property>
+  </action>
  </widget>
  <tabstops>
   <tabstop>scripts</tabstop>
-  <tabstop>save_script</tabstop>
-  <tabstop>load_script</tabstop>
+  <tabstop>save_script_button</tabstop>
+  <tabstop>load_script_button</tabstop>
   <tabstop>script_name</tabstop>
   <tabstop>clock_timeout</tabstop>
   <tabstop>IP_list</tabstop>
   <tabstop>IP_to_add</tabstop>
-  <tabstop>add_IP</tabstop>
-  <tabstop>delete_IPs</tabstop>
-  <tabstop>run_script</tabstop>
-  <tabstop>delete_script</tabstop>
+  <tabstop>add_IP_button</tabstop>
+  <tabstop>delete_IPs_button</tabstop>
+  <tabstop>run_script_button</tabstop>
+  <tabstop>delete_script_button</tabstop>
  </tabstops>
  <resources/>
  <connections/>

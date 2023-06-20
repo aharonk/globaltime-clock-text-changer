@@ -1,5 +1,6 @@
 import argparse
 import logging
+import socket
 import time
 from datetime import datetime
 
@@ -10,59 +11,76 @@ logging.basicConfig(filename=f"clockSetting{datetime.now().strftime('%m%d%y')}.l
                     filemode='a',
                     level=logging.INFO)
 
+PORT = 7001
+CONNECT_MESSAGE = bytes(
+    [0x47, 0x54, 0xc0, 0x15, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xcf, 0x79])
+MESSAGE_HEAD = bytes([0x47, 0x54, 0x80, 0x24, 0x0b, 0, 0])  # GT $
 
-def connect(ip):
-    connect_message = bytes(
-        [0x47, 0x54, 0xc0, 0x15, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xcf, 0x79])
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(('', 7000))
-    sock.sendto(connect_message, (ip, 7000))
-    logging.info(f"Contacted clock: {connect_message.hex()}")
-
-    wait_for_response(sock)
-
-    return sock
+SOCK = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+SOCK.bind(('', PORT))
 
 
-def wait_for_response(sock):
-    data, addr = sock.recvfrom(7000)
-    logging.info(f"Received confirmation: {data.hex()}")
+def get_args_as_list():
+    CLI = argparse.ArgumentParser()
+    CLI.add_argument("ip", nargs="+")
+    CLI.add_argument("message")
+    return CLI
 
 
-def send_message(sock, ip, plain_message):
+def multicast(ips, message, timeout, log=True):
+    logging.disable(logging.NOTSET) if log else logging.disable(logging.INFO)
+
+    failed_ips = []
+
+    for address in ips:
+        logging.info(f"***STARTING CLOCK @ {address}***")
+        if connect(address, timeout):
+            time.sleep(.5)
+            send_message(address, message)
+        else:
+            failed_ips.append(address)
+        logging.info("***FINISHED CLOCK***")
+
+    return failed_ips
+
+
+def connect(ip, timeout):
+    SOCK.settimeout(timeout)
+    SOCK.sendto(CONNECT_MESSAGE, (ip, PORT))
+
+    logging.info(f"Contacted clock: {CONNECT_MESSAGE.hex()}")
+
+    return wait_for_response()
+
+
+def wait_for_response():
+    try:
+        data, addr = SOCK.recvfrom(PORT)
+        logging.info(f"Received confirmation: {data.hex()}")
+        return True
+    except TimeoutError:
+        logging.info("Timed out waiting for response.")
+        return False
+
+
+def send_message(ip, plain_message):
     full_message = create_full_message(plain_message)
 
-    sock.sendto(full_message, (ip, 7000))
+    SOCK.sendto(full_message, (ip, PORT))
     logging.info(f"Sent display text: {full_message.hex()}")
 
-    wait_for_response(sock)
+    wait_for_response()
 
 
 def create_full_message(plain_message):
-    message_head = bytes([0x47, 0x54, 0x80, 0x24, 0x0b, 0, 0])  # GT $
-
     # max message length is 32, plus another 0 between it and the checksum
-    message_to_send = message_head + bytes(plain_message, 'utf-8') + b'\0' * (33 - len(plain_message))
+    message_to_send = MESSAGE_HEAD + bytes(plain_message, 'utf-8') + b'\0' * (33 - len(plain_message))
     crc16 = crcmod.mkCrcFun(0x18005, initCrc=0xFFFF)
 
     return message_to_send + crc16(message_to_send).to_bytes(2, 'little')
 
 
-def get_args_as_list():
-    CLI = argparse.ArgumentParser()
-    CLI.add_argument("ips", nargs="+")
-    CLI.add_argument("message")
-    return CLI
-
-
 # usage: CoIP.py 192.168.200.192 127.0.0.1 "Mincha 8:10PM"
 if __name__ == '__main__':
     args = get_args_as_list().parse_args()
-
-    for address in args.ips:
-        logging.info(f"***STARTING CLOCK @ {address}***")
-        socket = connect(address)
-        time.sleep(.5)
-        send_message(socket, address, args.message)  # todo add timeout
-        logging.info(f"***FINISHED CLOCK***")
+    multicast(args.ip, args.message, 10)
