@@ -64,5 +64,5 @@ if __name__ == '__main__':
         logging.info(f"***STARTING CLOCK @ {address}***")
         socket = connect(address)
         time.sleep(.5)
-        send_message(socket, address, args.message)
+        send_message(socket, address, args.message)  # todo add timeout
         logging.info(f"***FINISHED CLOCK***")
