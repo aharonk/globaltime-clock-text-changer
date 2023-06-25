@@ -6,10 +6,7 @@ from datetime import datetime
 
 import crcmod as crcmod
 
-logging.basicConfig(filename=f"clockSetting{datetime.now().strftime('%m%d%y')}.log",
-                    format='%(asctime)s %(message)s',
-                    filemode='a',
-                    level=logging.INFO)
+logging_enabled = False
 
 PORT = 7001
 CONNECT_MESSAGE = bytes(
@@ -27,8 +24,23 @@ def get_args_as_list():
     return CLI
 
 
+def set_log(do_log):
+    global logging_enabled
+
+    if do_log:
+        if not logging_enabled:
+            logging_enabled = True
+            logging.basicConfig(filename=f"clockSetting{datetime.now().strftime('%m%d%y')}.log",
+                                format='%(asctime)s %(message)s',
+                                filemode='a',
+                                level=logging.INFO)
+        logging.disable(logging.NOTSET)
+    else:
+        logging.disable(logging.INFO)
+
+
 def multicast(ips, message, timeout, log=True):
-    logging.disable(logging.NOTSET) if log else logging.disable(logging.INFO)
+    set_log(log)
 
     failed_ips = []
 

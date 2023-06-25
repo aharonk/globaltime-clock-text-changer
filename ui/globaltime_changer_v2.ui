@@ -15,7 +15,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>icon.jpg</normaloff>icon.jpg</iconset>
+    <normaloff>assets/icon.jpg</normaloff>assets/icon.jpg</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2">
@@ -30,13 +30,6 @@
       </item>
       <item row="3" column="1">
        <widget class="QLineEdit" name="script_name"/>
-      </item>
-      <item row="1" column="1">
-       <widget class="QPushButton" name="load_script_button">
-        <property name="text">
-         <string>Load Script</string>
-        </property>
-       </widget>
       </item>
       <item row="4" column="0">
        <widget class="QLabel" name="message_label">
@@ -108,13 +101,6 @@
         </property>
        </spacer>
       </item>
-      <item row="1" column="0">
-       <widget class="QPushButton" name="save_script_button">
-        <property name="text">
-         <string>Save Script</string>
-        </property>
-       </widget>
-      </item>
       <item row="2" column="0">
        <spacer name="verticalSpacer">
         <property name="orientation">
@@ -185,6 +171,13 @@
         </property>
        </widget>
       </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QPushButton" name="save_script_button">
+        <property name="text">
+         <string>Save Script</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
    </layout>
@@ -202,10 +195,11 @@
     <property name="title">
      <string>Settings</string>
     </property>
-    <addaction name="actionSelect_Script_Folder"/>
-    <addaction name="separator"/>
     <addaction name="actionLog_Runs"/>
     <addaction name="actionAutosave"/>
+    <addaction name="actionRemember_last_script"/>
+    <addaction name="separator"/>
+    <addaction name="actionSet_default_timeout"/>
    </widget>
    <addaction name="menuSettings"/>
   </widget>
@@ -238,14 +232,29 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Autosave</string>
+    <string>Save on close</string>
+   </property>
+  </action>
+  <action name="actionRemember_last_script">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Remember last script</string>
+   </property>
+  </action>
+  <action name="actionSet_default_timeout">
+   <property name="text">
+    <string>Set default timeout</string>
    </property>
   </action>
  </widget>
  <tabstops>
   <tabstop>scripts</tabstop>
   <tabstop>save_script_button</tabstop>
-  <tabstop>load_script_button</tabstop>
   <tabstop>script_name</tabstop>
   <tabstop>clock_timeout</tabstop>
   <tabstop>IP_list</tabstop>
