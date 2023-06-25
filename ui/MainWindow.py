@@ -1,4 +1,4 @@
-# Form implementation generated from reading ui file 'globaltime_changer_v2.ui'
+# Form implementation generated from reading ui file 'ui/globaltime_changer_v2.ui'
 #
 # Created by: PyQt6 UI code generator 6.4.2
 #
@@ -14,7 +14,7 @@ class Ui_MainWindow(object):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(645, 600)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("assets/icon.jpg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon.addPixmap(QtGui.QPixmap("ui\\assets/icon.jpg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         MainWindow.setWindowIcon(icon)
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
