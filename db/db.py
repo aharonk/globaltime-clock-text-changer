@@ -6,6 +6,9 @@ class DBConn:
         self.conn = sqlite3.connect("scripts.sqlite")
         self.cursor = self.conn.cursor()
 
+        self.cursor.execute("PRAGMA FOREIGN_KEYS = ON")
+        self.conn.commit()
+
     def select_all_ips(self):
         cursor_res = self.cursor.execute("SELECT Address FROM IP")
         return [r[0] for r in cursor_res.fetchall()]
