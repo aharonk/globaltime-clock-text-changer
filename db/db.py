@@ -1,9 +1,19 @@
+import os
 import sqlite3
+import sys
 
 
 class DBConn:
     def __init__(self):
-        self.conn = sqlite3.connect("scripts.sqlite")
+        if getattr(sys, 'frozen', False):
+            application_path = os.path.dirname(sys.executable)
+        elif __file__:
+            application_path = os.path.dirname(__file__)
+        else:
+            exit(-1)
+
+        print(os.path.join(application_path, "scripts.sqlite"))
+        self.conn = sqlite3.connect(os.path.join(application_path, "scripts.sqlite"))
         self.cursor = self.conn.cursor()
 
         self.cursor.execute("PRAGMA FOREIGN_KEYS = ON")

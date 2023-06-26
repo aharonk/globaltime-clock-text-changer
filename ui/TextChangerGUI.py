@@ -171,7 +171,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.settings.setValue("remember_last_script", self.actionRemember_last_script.isChecked())
         self.settings.setValue("default_timeout", self.default_timeout)
 
-        if self.actionAutosave.isChecked():
+        if self.actionAutosave.isChecked() and self.scripts.selectedItems():
             self.save_script(True)
 
         a0.accept()
