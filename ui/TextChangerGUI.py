@@ -1,4 +1,5 @@
 import ipaddress
+import os
 import sys
 
 from PyQt6.QtCore import Qt, QSettings
@@ -14,7 +15,7 @@ def launch_gui():
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    exit(app.exec())
+    sys.exit(app.exec())
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -25,11 +26,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # Setup
         self.db = DBConn()
         self.IP_states_on_load = {}
+        self.vals_on_load = ()
 
         self.IP_list.insertItems(0, self.db.select_all_ips())
         self.scripts.insertItems(0, self.db.select_all_scripts())
 
-        self.settings = QSettings("../settings.ini", QSettings.Format.IniFormat)
+        if getattr(sys, 'frozen', False):
+            application_path = os.path.dirname(sys.executable) + "\\data"
+        else:
+            application_path = os.path.dirname(__file__)
+
+        self.settings = QSettings(os.path.join(application_path, "settings.ini"), QSettings.Format.IniFormat)
         self.settings.setFallbacksEnabled(False)
         self.actionLog_Runs.setChecked(self.settings.value("log_runs", False, bool))
         self.actionAutosave.setChecked(self.settings.value("autosave", True, bool))
@@ -65,12 +72,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             self.unload_script()
 
+    def get_added_and_removed_IPs(self):
+        added_IPs, removed_IPs = [], []
+        for row in range(self.IP_list.count()):
+            current_item = self.IP_list.item(row)
+            if self.IP_states_on_load[current_item.text()]:
+                if not current_item.isSelected():
+                    removed_IPs.append(current_item.text())
+            elif current_item.isSelected():
+                added_IPs.append(current_item.text())
+        return added_IPs, removed_IPs
+
     # Actions
     def add_IP(self):
         try:
             ipaddress.ip_address(self.IP_to_add.text())
             if self.db.insert_ip(self.IP_to_add.text()):
                 self.IP_list.addItem(self.IP_to_add.text())
+                self.IP_states_on_load.update({self.IP_to_add.text(): False})
                 self.IP_to_add.clear()
             else:
                 SimpleTextDialog("Duplicate Address!", f"{self.IP_to_add.text()} is already in your list.").exec()
@@ -85,17 +104,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             for ip in self.IP_list.selectedItems():
                 addresses.append(ip.text())
                 self.IP_list.takeItem(self.IP_list.row(ip))
+                self.IP_states_on_load.pop(ip.text())
             self.db.delete_ips(addresses)
 
-    def save_script(self, autosave=False):
+    def save_script(self, autosave=False, added_IPs = None, removed_IPs = None):
         name = self.script_name.text()
 
-        if name == "":
-            if not autosave:
-                SimpleTextDialog("Missing Name!", f"You need to name your script.").exec()
-                return
-            else:
-                name = "Autosave"
+        if autosave:
+            name = ("" if name == "" else (name + " - ")) + "Autosave"
+        elif name == "":
+            SimpleTextDialog("Missing Name!", f"You need to name your script.").exec()
+            return
 
         same_named_script = self.scripts.findItems(name, Qt.MatchFlag.MatchExactly)
         if len(same_named_script) > 0:
@@ -107,14 +126,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.db.insert_script(name, self.message.text(), self.clock_timeout.value())
             self.scripts.addItem(name)
 
-        added_IPs, removed_IPs = [], []
-        for row in range(self.IP_list.count()):
-            current_item = self.IP_list.item(row)
-            if self.IP_states_on_load[current_item.text()]:
-                if not current_item.isSelected():
-                    removed_IPs.append(current_item.text())
-            elif current_item.isSelected():
-                added_IPs.append(current_item.text())
+        if not (added_IPs or removed_IPs):
+            added_IPs, removed_IPs = [], []
+            for row in range(self.IP_list.count()):
+                current_item = self.IP_list.item(row)
+                if self.IP_states_on_load[current_item.text()]:
+                    if not current_item.isSelected():
+                        removed_IPs.append(current_item.text())
+                elif current_item.isSelected():
+                    added_IPs.append(current_item.text())
 
         if added_IPs:
             self.db.insert_IPs_to_script(name, added_IPs)
@@ -122,7 +142,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.db.remove_IPs_from_script(name, removed_IPs)
 
         selected_script = self.scripts.findItems(name, Qt.MatchFlag.MatchExactly)[0]
-        if not selected_script.isSelected():
+        if not selected_script.isSelected() and self.scripts.currentItem():
             self.scripts.currentItem().setSelected(False)
             selected_script.setSelected(True)
 
@@ -132,6 +152,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.message.setText(script[1])
         self.clock_timeout.setValue(script[2])
 
+        self.vals_on_load = script[:3]
         self.IP_states_on_load = {}
         for i in range(self.IP_list.count()):
             address = self.IP_list.item(i).text()
@@ -144,6 +165,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.message.setText("")
         self.clock_timeout.setValue(self.default_timeout)
         self.IP_states_on_load = {}
+        self.vals_on_load = ()
 
     def run_script(self):
         failed_ips = CoIP.multicast([ip.text() for ip in self.IP_list.selectedItems()], self.message.text(),
@@ -163,6 +185,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         dialog = FloatDialog("Default Timeout per Clock", self.default_timeout)
         if dialog.exec():
             self.default_timeout = dialog.get_value()
+            self.clock_timeout.setValue(self.default_timeout)
 
     # Autosave
     def closeEvent(self, a0):
@@ -171,7 +194,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.settings.setValue("remember_last_script", self.actionRemember_last_script.isChecked())
         self.settings.setValue("default_timeout", self.default_timeout)
 
-        if self.actionAutosave.isChecked() and self.scripts.selectedItems():
-            self.save_script(True)
+        new_vals = (self.script_name.text(), self.message.text(), self.clock_timeout.value())
+        added_IPs, removed_IPs = self.get_added_and_removed_IPs()
+        if self.actionAutosave.isChecked() and (self.vals_on_load != new_vals or (added_IPs or removed_IPs)):
+            self.save_script(True, added_IPs, removed_IPs)
 
         a0.accept()

@@ -6,13 +6,10 @@ import sys
 class DBConn:
     def __init__(self):
         if getattr(sys, 'frozen', False):
-            application_path = os.path.dirname(sys.executable)
-        elif __file__:
-            application_path = os.path.dirname(__file__)
+            application_path = os.path.dirname(sys.executable) + "\\data"
         else:
-            exit(-1)
+            application_path = os.path.dirname(__file__)
 
-        print(os.path.join(application_path, "scripts.sqlite"))
         self.conn = sqlite3.connect(os.path.join(application_path, "scripts.sqlite"))
         self.cursor = self.conn.cursor()
 
