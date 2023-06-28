@@ -192,7 +192,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
 
         dir_path = directory.get_path(False) + f"/batches/"
-        if not os.path.isdir(dir_path):
+        if not directory.exists(dir_path, False):
             os.mkdir(dir_path)
         with open(dir_path + f"{self.script_name.text()}.bat", 'w+') as file:
             file.write(

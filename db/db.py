@@ -5,10 +5,39 @@ import directory
 
 class DBConn:
     def __init__(self):
-        self.conn = sqlite3.connect(directory.get_path(True, "/db") + "/scripts.sqlite")
+        path = directory.get_path(True, "/db") + "/scripts.sqlite"
+        exists = directory.exists(path, True)
+
+        self.conn = sqlite3.connect(path)
         self.cursor = self.conn.cursor()
 
         self.cursor.execute("PRAGMA FOREIGN_KEYS = ON")
+        if not exists:
+            self.cursor.execute("""CREATE TABLE IP (
+            ID      integer
+                primary key autoincrement,
+            Address TEXT not null
+                unique
+            );""")
+            self.cursor.execute("""CREATE TABLE Script (
+            ID   integer
+                primary key autoincrement,
+            Name TEXT not null
+                unique, 
+            Timeout REAL default 10.00, 
+            Message TEXT not null);""")
+            self.cursor.execute("""CREATE TABLE IPsInScript (
+            ScriptID integer not null
+                constraint IPsInScript_Script_ID_fk
+                    references Script
+                    on update cascade on delete cascade,
+            IPID     integer not null
+                constraint IPsInScript_IP_ID_fk
+                    references IP
+                    on update cascade on delete cascade,
+            constraint IPsInScript_pk
+                primary key (ScriptID, IPID));""")
+
         self.conn.commit()
 
     def select_all_ips(self):
