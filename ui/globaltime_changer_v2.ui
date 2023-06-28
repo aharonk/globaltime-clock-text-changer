@@ -38,13 +38,6 @@
         </property>
        </widget>
       </item>
-      <item row="8" column="3" colspan="3">
-       <widget class="QPushButton" name="delete_script_button">
-        <property name="text">
-         <string>Delete Script</string>
-        </property>
-       </widget>
-      </item>
       <item row="6" column="2">
        <spacer name="horizontalSpacer">
         <property name="orientation">
@@ -65,13 +58,6 @@
        <widget class="QPushButton" name="add_IP_button">
         <property name="text">
          <string>Add IP</string>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="0" colspan="3">
-       <widget class="QPushButton" name="run_script_button">
-        <property name="text">
-         <string>Run Script</string>
         </property>
        </widget>
       </item>
@@ -178,6 +164,27 @@
         </property>
        </widget>
       </item>
+      <item row="8" column="0" colspan="2">
+       <widget class="QPushButton" name="run_script_button">
+        <property name="text">
+         <string>Run Script</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="4" colspan="2">
+       <widget class="QPushButton" name="delete_script_button">
+        <property name="text">
+         <string>Delete Script</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="2" colspan="2">
+       <widget class="QPushButton" name="create_bat_button">
+        <property name="text">
+         <string>Create .bat from Script</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
    </layout>
@@ -195,9 +202,13 @@
     <property name="title">
      <string>Settings</string>
     </property>
+    <property name="toolTipsVisible">
+     <bool>true</bool>
+    </property>
     <addaction name="actionLog_Runs"/>
     <addaction name="actionAutosave"/>
     <addaction name="actionRemember_last_script"/>
+    <addaction name="actionGenerate_static_batch_file"/>
     <addaction name="separator"/>
     <addaction name="actionSet_default_timeout"/>
    </widget>
@@ -251,18 +262,31 @@
     <string>Set default timeout</string>
    </property>
   </action>
+  <action name="actionGenerate_static_batch_file">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Generate static .bat</string>
+   </property>
+   <property name="toolTip">
+    <string>A non-static .bat will change if you change the script with the same name.</string>
+   </property>
+  </action>
  </widget>
  <tabstops>
   <tabstop>scripts</tabstop>
   <tabstop>save_script_button</tabstop>
   <tabstop>script_name</tabstop>
+  <tabstop>message</tabstop>
   <tabstop>clock_timeout</tabstop>
-  <tabstop>IP_list</tabstop>
   <tabstop>IP_to_add</tabstop>
   <tabstop>add_IP_button</tabstop>
   <tabstop>delete_IPs_button</tabstop>
   <tabstop>run_script_button</tabstop>
+  <tabstop>create_bat_button</tabstop>
   <tabstop>delete_script_button</tabstop>
+  <tabstop>IP_list</tabstop>
  </tabstops>
  <resources/>
  <connections/>

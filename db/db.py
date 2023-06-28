@@ -1,16 +1,11 @@
-import os
 import sqlite3
-import sys
+
+import directory
 
 
 class DBConn:
     def __init__(self):
-        if getattr(sys, 'frozen', False):
-            application_path = os.path.dirname(sys.executable) + "\\data"
-        else:
-            application_path = os.path.dirname(__file__)
-
-        self.conn = sqlite3.connect(os.path.join(application_path, "scripts.sqlite"))
+        self.conn = sqlite3.connect(directory.get_path(True, "/db") + "/scripts.sqlite")
         self.cursor = self.conn.cursor()
 
         self.cursor.execute("PRAGMA FOREIGN_KEYS = ON")
@@ -42,6 +37,9 @@ class DBConn:
     def select_script(self, name):
         cursor_res = self.cursor.execute("SELECT Name, Message, Timeout FROM Script WHERE Name = ?", (name,))
         script_fields = cursor_res.fetchone()
+
+        if not script_fields:
+            return None
 
         cursor_res = self.cursor.execute("""
         SELECT Address FROM IP 

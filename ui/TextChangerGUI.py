@@ -1,14 +1,15 @@
 import ipaddress
-import os
+import os.path
 import sys
 
-from PyQt6.QtCore import Qt, QSettings
+from PyQt6.QtCore import Qt, QSettings, QThread
 from PyQt6.QtWidgets import *
 
-import CoIP
-from ui.MainWindow import Ui_MainWindow
-from ui.Dialogs import SimpleTextDialog, YesNoDialog, FloatDialog
+import directory
 from db.db import DBConn
+from ui.Dialogs import SimpleTextDialog, YesNoDialog, FloatDialog
+from ui.MainWindow import Ui_MainWindow
+from ui.ScriptRunner import ScriptWorker
 
 
 def launch_gui():
@@ -31,12 +32,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.IP_list.insertItems(0, self.db.select_all_ips())
         self.scripts.insertItems(0, self.db.select_all_scripts())
 
-        if getattr(sys, 'frozen', False):
-            application_path = os.path.dirname(sys.executable) + "\\data"
-        else:
-            application_path = os.path.dirname(__file__)
-
-        self.settings = QSettings(os.path.join(application_path, "settings.ini"), QSettings.Format.IniFormat)
+        self.settings = QSettings(directory.get_path(True) + "/settings.ini", QSettings.Format.IniFormat)
         self.settings.setFallbacksEnabled(False)
         self.actionLog_Runs.setChecked(self.settings.value("log_runs", False, bool))
         self.actionAutosave.setChecked(self.settings.value("autosave", True, bool))
@@ -55,7 +51,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.save_script_button.clicked.connect(self.save_script)
 
         # Run Script
-        self.run_script_button.clicked.connect(self.run_script)
+        self.run_script_button.clicked.connect(self.threaded_run)
+
+        # Export Script to bat
+        self.create_bat_button.clicked.connect(self.create_bat)
 
         # Delete Script
         self.delete_script_button.clicked.connect(self.delete_script)
@@ -76,9 +75,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         added_IPs, removed_IPs = [], []
         for row in range(self.IP_list.count()):
             current_item = self.IP_list.item(row)
-            if self.IP_states_on_load[current_item.text()]:
+            if self.IP_states_on_load[current_item.text()]["selected"]:
                 if not current_item.isSelected():
                     removed_IPs.append(current_item.text())
+                elif current_item.isSelected() and self.IP_states_on_load[current_item.text()]["re-added"]:
+                    added_IPs.append(current_item.text())
             elif current_item.isSelected():
                 added_IPs.append(current_item.text())
         return added_IPs, removed_IPs
@@ -89,7 +90,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             ipaddress.ip_address(self.IP_to_add.text())
             if self.db.insert_ip(self.IP_to_add.text()):
                 self.IP_list.addItem(self.IP_to_add.text())
-                self.IP_states_on_load.update({self.IP_to_add.text(): False})
+                if self.IP_to_add.text() in self.IP_states_on_load:
+                    self.IP_states_on_load.update({self.IP_to_add.text(): {"selected": False, "re-added": True}})
+                else:
+                    self.IP_states_on_load.update({self.IP_to_add.text(): {"selected": False, "re-added": False}})
                 self.IP_to_add.clear()
             else:
                 SimpleTextDialog("Duplicate Address!", f"{self.IP_to_add.text()} is already in your list.").exec()
@@ -104,20 +108,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             for ip in self.IP_list.selectedItems():
                 addresses.append(ip.text())
                 self.IP_list.takeItem(self.IP_list.row(ip))
-                self.IP_states_on_load.pop(ip.text())
             self.db.delete_ips(addresses)
 
-    def save_script(self, autosave=False, added_IPs = None, removed_IPs = None):
+    def save_script(self, autosave=False, added_IPs=None, removed_IPs=None):
         name = self.script_name.text()
 
-        if autosave:
-            name = ("" if name == "" else (name + " - ")) + "Autosave"
-        elif name == "":
-            SimpleTextDialog("Missing Name!", f"You need to name your script.").exec()
-            return
+        if name == "":
+            if autosave:
+                name = "Autosave"
+            else:
+                SimpleTextDialog("Missing Name!", f"You need to name your script.").exec()
+                return
 
         same_named_script = self.scripts.findItems(name, Qt.MatchFlag.MatchExactly)
-        if len(same_named_script) > 0:
+        if (not autosave) and len(same_named_script) > 0:
             if YesNoDialog("Update Script", f'Are you sure you want to update {name}?').exec():
                 self.db.update_script(name, self.message.text(), self.clock_timeout.value())
             else:
@@ -127,18 +131,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.scripts.addItem(name)
 
         if not (added_IPs or removed_IPs):
-            added_IPs, removed_IPs = [], []
-            for row in range(self.IP_list.count()):
-                current_item = self.IP_list.item(row)
-                if self.IP_states_on_load[current_item.text()]:
-                    if not current_item.isSelected():
-                        removed_IPs.append(current_item.text())
-                elif current_item.isSelected():
-                    added_IPs.append(current_item.text())
+            added_IPs, removed_IPs = self.get_added_and_removed_IPs()
 
         if added_IPs:
+            self.IP_states_on_load.update({address: {"selected": True, "re-added": False} for address in added_IPs})
             self.db.insert_IPs_to_script(name, added_IPs)
         if removed_IPs:
+            self.IP_states_on_load.update({address: {"selected": False, "re-added": False} for address in removed_IPs})
             self.db.remove_IPs_from_script(name, removed_IPs)
 
         selected_script = self.scripts.findItems(name, Qt.MatchFlag.MatchExactly)[0]
@@ -158,7 +157,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             address = self.IP_list.item(i).text()
             selected = address in script[3]
             self.IP_list.item(i).setSelected(selected)
-            self.IP_states_on_load.update({address: selected})
+            self.IP_states_on_load.update({address: {"selected": selected, "re-added": False}})
 
     def unload_script(self):
         self.script_name.setText("")
@@ -167,14 +166,44 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.IP_states_on_load = {}
         self.vals_on_load = ()
 
-    def run_script(self):
-        failed_ips = CoIP.multicast([ip.text() for ip in self.IP_list.selectedItems()], self.message.text(),
-                                    self.clock_timeout.value(), self.actionLog_Runs.isChecked())
+    def threaded_run(self):
+        if not self.vals_on_load:
+            SimpleTextDialog("Select Script", "You need to select a script to run it.").exec()
+            return
 
-        message = "Run Successful." if not failed_ips else (
-                "The following addresses did not respond:\n" + ('\n'.join(failed_ips)))
+        self.thread = QThread()
+        self.worker = ScriptWorker(self)
+        self.worker.moveToThread(self.thread)
 
-        SimpleTextDialog("Run Complete", message).exec()
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+
+        self.thread.start()
+
+        self.run_script_button.setEnabled(False)
+        self.thread.finished.connect(lambda: self.run_script_button.setEnabled(True))
+        self.thread.finished.connect(lambda: SimpleTextDialog("Run Results", self.worker.get_result_message()).exec())
+
+    def create_bat(self):
+        if not self.vals_on_load:
+            SimpleTextDialog("Select Script", "You need a selected script to create a .bat.").exec()
+            return
+
+        dir_path = directory.get_path(False) + f"/batches/"
+        if not os.path.isdir(dir_path):
+            os.mkdir(dir_path)
+        with open(dir_path + f"{self.script_name.text()}.bat", 'w+') as file:
+            file.write(
+                f"@echo off\n{directory.get_path(False)}/{'main.exe ' if directory.is_exe() else 'main.py '}")
+            if self.actionGenerate_static_batch_file.isChecked():
+                file.write(f"-m \"{self.message.text()}\" -t {self.clock_timeout.value()} -a "
+                           f"{' '.join([ip.text() for ip in self.IP_list.selectedItems()])}")
+            else:
+                file.write(f"-s {self.script_name.text()}")
+            file.write(f"{'' if self.actionLog_Runs.isChecked() else ' -n'}\npause")
+        SimpleTextDialog("Exported Script", "Your .bat was created.").exec()
 
     def delete_script(self):
         if self.scripts.selectedItems() and YesNoDialog("Delete Script",
@@ -194,9 +223,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.settings.setValue("remember_last_script", self.actionRemember_last_script.isChecked())
         self.settings.setValue("default_timeout", self.default_timeout)
 
-        new_vals = (self.script_name.text(), self.message.text(), self.clock_timeout.value())
-        added_IPs, removed_IPs = self.get_added_and_removed_IPs()
-        if self.actionAutosave.isChecked() and (self.vals_on_load != new_vals or (added_IPs or removed_IPs)):
-            self.save_script(True, added_IPs, removed_IPs)
+        # Autosave if the following are all true:
+        # - Autosave is checked and the name and message aren't both blank (or the message is blank and the name is
+        #   "Autosave")
+        # - Name, message, timeout, or included IPs have changed
+        if self.actionAutosave.isChecked() and not (
+                self.script_name.text() in ("", "Autosave") and self.message.text() == ""):
+            new_vals = (self.script_name.text(), self.message.text(), self.clock_timeout.value())
+            added_IPs, removed_IPs = self.get_added_and_removed_IPs()
 
+            if self.vals_on_load != new_vals or added_IPs or removed_IPs:
+                self.save_script(True, added_IPs, removed_IPs)
         a0.accept()
