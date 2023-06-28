@@ -25,20 +25,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
 
         # Setup
-        self.db = DBConn()
-        self.IP_states_on_load = {}
-        self.vals_on_load = ()
+        path = directory.get_path(True)
+        exists = os.path.exists(path)
+        if not exists:
+            os.mkdir(path)
 
-        self.IP_list.insertItems(0, self.db.select_all_ips())
-        self.scripts.insertItems(0, self.db.select_all_scripts())
-
-        self.settings = QSettings(directory.get_path(True) + "/settings.ini", QSettings.Format.IniFormat)
+        self.settings = QSettings(path + "/settings.ini", QSettings.Format.IniFormat)
         self.settings.setFallbacksEnabled(False)
         self.actionLog_Runs.setChecked(self.settings.value("log_runs", False, bool))
         self.actionAutosave.setChecked(self.settings.value("autosave", True, bool))
         self.actionRemember_last_script.setChecked(self.settings.value("remember_last_script", True, bool))
         self.default_timeout = self.settings.value("default_timeout", 10.0, float)
         self.clock_timeout.setValue(self.default_timeout)
+
+        self.db = DBConn()
+        self.IP_states_on_load = {}
+        self.vals_on_load = ()
+
+        self.IP_list.insertItems(0, self.db.select_all_ips())
+        self.scripts.insertItems(0, self.db.select_all_scripts())
 
         # Add IP
         self.add_IP_button.clicked.connect(self.add_IP)
@@ -192,7 +197,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
 
         dir_path = directory.get_path(False) + f"/batches/"
-        if not directory.exists(dir_path, False):
+        if not os.path.exists(dir_path):
             os.mkdir(dir_path)
         with open(dir_path + f"{self.script_name.text()}.bat", 'w+') as file:
             file.write(

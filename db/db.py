@@ -1,3 +1,4 @@
+import os
 import sqlite3
 
 import directory
@@ -5,10 +6,15 @@ import directory
 
 class DBConn:
     def __init__(self):
-        path = directory.get_path(True, "/db") + "/scripts.sqlite"
-        exists = directory.exists(path, True)
+        path = directory.get_path(True, "/db")
+        exists = os.path.exists(path)
+        if not exists:
+            os.mkdir(path)
 
-        self.conn = sqlite3.connect(path)
+        file = path + "/scripts.sqlite"
+        exists = os.path.exists(file)
+
+        self.conn = sqlite3.connect(file)
         self.cursor = self.conn.cursor()
 
         self.cursor.execute("PRAGMA FOREIGN_KEYS = ON")
