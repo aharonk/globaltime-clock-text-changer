@@ -3,3 +3,7 @@ log_runs=false
 autosave=true
 remember_last_script=true
 default_timeout=10
+
+[Recurring]
+calendar=<link to an .ICS download>
+holidays=<link to an .ICS download>
