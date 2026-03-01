@@ -1,7 +1,7 @@
 import sys
 
 from coip import multicast
-from db import db
+from ui.db import db
 
 from ui import TextChangerGUI
 

@@ -6,7 +6,7 @@ from PyQt6.QtCore import Qt, QSettings, QThread
 from PyQt6.QtWidgets import *
 
 import directory
-from db.db import DBConn
+from ui.db.db import DBConn
 from ui.Dialogs import SimpleTextDialog, YesNoDialog, FloatDialog
 from ui.MainWindow import Ui_MainWindow
 from ui.ScriptRunner import ScriptWorker
