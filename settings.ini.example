@@ -7,3 +7,4 @@ default_timeout=10
 [Recurring]
 calendar=<link to an .ICS download>
 holidays=<link to an .ICS download>
+shabbos_until=

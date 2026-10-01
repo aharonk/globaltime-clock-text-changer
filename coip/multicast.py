@@ -23,7 +23,7 @@ def multicast(ips, message, timeout, log=True):
 
     set_log(log)
 
-    failed_IPs = []
+    failed_ips = []
 
     for address in ips:
         logging.info(f"***STARTING CLOCK @ {address}***")
@@ -31,11 +31,11 @@ def multicast(ips, message, timeout, log=True):
             time.sleep(.5)
             send_message(address, message)
         else:
-            failed_IPs.append(address)
+            failed_ips.append(address)
         logging.info("***FINISHED CLOCK***")
 
-    return "Run Successful." if not failed_IPs else (
-            "The following addresses did not respond:\n" + ('\n'.join(failed_IPs)))
+    return "Run Successful." if not failed_ips else (
+            "The following addresses did not respond:\n" + ('\n'.join(failed_ips)))
 
 
 def get_socket_instance():

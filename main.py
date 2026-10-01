@@ -1,6 +1,8 @@
+import configparser
 import sys
 
 from coip import multicast
+from recurring.recurring import create_next_message
 from ui.db import db
 
 from ui import TextChangerGUI
@@ -21,7 +23,10 @@ def print_usage(help_type):
     print()
 
 
-if __name__ == "__main__":
+def main():
+    create_next_message()
+    return
+
     has_help = any(arg in sys.argv for arg in ("-h", "--Help"))
     has_script_name = any(arg in sys.argv for arg in ("-s", "--Script"))
     has_static_script = any(arg in sys.argv for arg in ("-m", "--Message", "-t", "--Timeout", "-a", "--Addresses"))
@@ -59,3 +64,7 @@ if __name__ == "__main__":
     else:
         print("This is the GlobalTime Clock Text Changer.")
         print_usage("both")
+
+
+if __name__ == "__main__":
+    main()
