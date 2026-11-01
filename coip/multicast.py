@@ -7,7 +7,7 @@ import crcmod as crcmod
 
 logging_enabled = False
 
-PORT = 7001
+PORT = 7000
 CONNECT_MESSAGE = bytes(
     [0x47, 0x54, 0xc0, 0x15, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xcf, 0x79])
 MESSAGE_HEAD = bytes([0x47, 0x54, 0x80, 0x24, 0x0b, 0, 0])  # GT $
