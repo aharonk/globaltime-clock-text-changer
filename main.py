@@ -1,7 +1,10 @@
 import configparser
+import logging
 import sys
+# import time
 
 from coip import multicast
+from datetime import datetime
 from recurring.recurring import create_next_message
 from ui.db import db
 
@@ -10,6 +13,10 @@ from ui import TextChangerGUI
 
 def print_usage(help_type):
     print(f'usage: main.{"exe" if getattr(sys, "frozen", False) else "py"} ', end='')
+    if help_type == "recurring":
+        print('[--Timeout 10 --Addresses 1.1.1.1 [1.1.1.2 ...] [--Nolog]]')
+        return
+
     if help_type == "both":
         print('[', end='')
     if help_type in ("name", "both"):
@@ -23,15 +30,27 @@ def print_usage(help_type):
     print()
 
 
-def main():
-    create_next_message()
-    return
-
+def main(test_dt = None):
     has_help = any(arg in sys.argv for arg in ("-h", "--Help"))
     has_script_name = any(arg in sys.argv for arg in ("-s", "--Script"))
     has_static_script = any(arg in sys.argv for arg in ("-m", "--Message", "-t", "--Timeout", "-a", "--Addresses"))
+    is_recurring = any(arg in sys.argv for arg in ("-r", "--Recurring"))
 
-    if len(sys.argv) == 1:
+    if is_recurring:
+        msg = create_next_message(test_dt)
+
+        if msg is not None:
+            if sys.argv[-1] in ("-n", "--Nolog"):
+                log = True
+                addresses = sys.argv[5:-1]
+            else:
+                log = False
+                addresses = sys.argv[5:]
+
+            print(multicast.multicast(addresses, msg, int(sys.argv[3]), log))
+        else:
+            print(f"No change at { test_dt if (test_dt != None) else datetime.now() }. Skipping.")
+    elif len(sys.argv) == 1:
         TextChangerGUI.launch_gui()
     elif has_script_name and has_static_script:
         print_usage("both")
@@ -67,4 +86,14 @@ def main():
 
 
 if __name__ == "__main__":
+    # main(datetime(2026, 10, 4, 19, 26))
+    # time.sleep(5)
+    # main(datetime(2026, 10, 4, 19, 34))
+    # time.sleep(5)
+    # main(datetime(2026, 10, 4, 19, 38))
+    # time.sleep(5)
+    # main(datetime(2026, 10, 10))
+    # time.sleep(5)
+    # main(datetime(2026, 10, 10, 7, 21))
+    # time.sleep(5)
     main()
